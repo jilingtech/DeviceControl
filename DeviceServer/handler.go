@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-		"github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 	"errors"
 	"strconv"
+	"github.com/satori/go.uuid"
+	"io"
 )
 
 func Sockets(res http.ResponseWriter, req *http.Request) {
@@ -76,38 +78,43 @@ func SendCommand(c *gin.Context) {
 		client.Send <- data
 		c.String(http.StatusOK, "ok")
 	} else {
-
+		fmt.Println(timeout)
 	}
+}
 
-	/*
-	var reqInfo GetInfo
-	err := c.BindJSON(&reqInfo)
-	if err != nil {
-		c.String(http.StatusBadRequest, "error")
+func SendCommandBase(c *gin.Context) {
+	buf := make([]byte, 1024)
+	device_id, ok:= c.GetQuery("device_id")
+	if !ok {
+		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
+	}
+	var cm = new(CommandMessage)
+	client, ok := manager.Clients[device_id]
+	if !ok {
+		c.String(http.StatusNotAcceptable, "Device not found")
 		return
-	} else {
-		var cm = new(CommandMessage)
-		client, ok := manager.Clients[reqInfo.BoxID]
-		if !ok {
-			c.String(http.StatusNotAcceptable, "Device not found")
-			return
-		}
-
-		ui, _ := uuid.NewV4()
-		fmt.Println(ui)
-		uis := ui.String()
-		cm.Id = uis
-		data, err := json.Marshal(cm)
-		if err != nil {
-			c.String(http.StatusInternalServerError, "covert err")
-			return
-		}
-		client.Send <- data
-		client.Missions[uis] = make(chan []byte)
-		result := <- client.Missions[uis]
-		fmt.Println(string(result))
-		delete(client.Missions, uis)
-		c.String(http.StatusOK, "ok")
 	}
-	*/
+	ui, _ := uuid.NewV4()
+	uis := ui.String()
+	cm.Id = uis
+
+ 	i, err := c.Request.Body.Read(buf)
+	if err != io.EOF && err != nil {
+		fmt.Println(err)
+		c.String(http.StatusInternalServerError, "read body err")
+		return
+	}
+ 	cm.Detail = buf[:i]
+	fmt.Println(cm.Detail)
+	data, err := json.Marshal(cm)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "covert err")
+		return
+	}
+	client.Send <- data
+	client.Missions[uis] = make(chan []byte)
+	result := <- client.Missions[uis]
+	fmt.Println(string(result))
+	delete(client.Missions, uis)
+	c.Data(http.StatusOK, "application/json", result)
 }

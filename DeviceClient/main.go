@@ -32,7 +32,7 @@ type Client struct {
 }
 
 var (
-	host = flag.String("host", "localhost", "http service host")
+	host = flag.String("host", "192.168.2.90", "http service host")
 	port = flag.Int("port", 1234, "http service port")
 	id = flag.String("id", "test", "id")
 )
@@ -73,7 +73,7 @@ func main() {
 			continue
 		}
 		rm.Id = string(cm.Id)
-		rm.Detail = []byte("a")
+		rm.Detail = cm.Detail
 		rmj, err := json.Marshal(rm)
 		c.Send <- rmj
 	}
