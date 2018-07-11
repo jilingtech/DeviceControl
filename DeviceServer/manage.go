@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"time"
+)
 
 type ClientManager struct {
 	Clients    map[string]*Client
@@ -16,9 +19,12 @@ func (manager *ClientManager) start() {
 			manager.Clients[client.Id] = client
 			log.Printf("A new socket client connected. %v", client)
 		case client := <-manager.Unregister:
-			if _, ok := manager.Clients[client.Id]; ok {
-				close(client.Send)
-				delete(manager.Clients, client.Id)
+			if c, ok := manager.Clients[client.Id]; ok {
+				// close(c.Send)
+				//delete(manager.Clients, client.Id)
+				c.Online = false
+				c.Socket.Close()
+				c.DropTime = time.Now()
 				log.Printf("A socket client is disconnected. %v", client)
 			}
 		}

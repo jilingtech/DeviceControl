@@ -10,13 +10,15 @@ import (
 	"strconv"
 	"github.com/satori/go.uuid"
 	"io"
-)
+	"github.com/bary321/DeviceControl/Structs"
+	"time"
+	)
 
-func Sockets(res http.ResponseWriter, req *http.Request) {
-	var rm = new(RegisterMessage)
-	conn, err := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(res, req, nil)
+func Sockets(c *gin.Context) {
+	var rm = new(Structs.RegisterMessage)
+	conn, err := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		http.NotFound(res, req)
+		http.NotFound(c.Writer, c.Request)
 		return
 	}
 	_, message, err := conn.ReadMessage()
@@ -32,13 +34,32 @@ func Sockets(res http.ResponseWriter, req *http.Request) {
 		fmt.Println(string(message))
 		return
 	}
-
-	client := &Client{Id: rm.Id, Socket: conn, Send: make(chan []byte), Missions: map[string]chan []byte{}}
-
-	manager.Register <- client
-
-	go client.read()
-	go client.write()
+	if client, ok := manager.Clients[rm.Id]; ok {
+		if client.Online == false {
+			client.Socket = conn
+			client.UpdateTime = time.Now()
+			client.Online = true
+			client.Send = make(chan []byte)
+			fmt.Println("a client reconnect", client)
+			go client.read()
+			go client.write()
+		} else {
+			fmt.Println("id is already in use", rm.Id)
+			var cm = new(Structs.RequestMessage)
+			cm.Id = "__replicate_id__"
+			cm.Type = 3
+			conn.WriteJSON(cm)
+			conn.Close()
+			c.AbortWithError(http.StatusBadRequest, errors.New("replicate id"))
+			return
+		}
+	} else {
+		client := &Client{Id: rm.Id, Socket: conn, Send: make(chan []byte), Missions: map[string]chan []byte{},
+						Online:true, RegisterTime:time.Now(), UpdateTime:time.Now(), SysInfo:new(Structs.SysInfo)}
+		manager.Register <- client
+		go client.read()
+		go client.write()
+	}
 }
 
 func SendCommand(c *gin.Context) {
@@ -88,10 +109,14 @@ func SendCommandBase(c *gin.Context) {
 	if !ok {
 		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
 	}
-	var cm = new(CommandMessage)
+	var cm = new(Structs.RequestMessage)
 	client, ok := manager.Clients[device_id]
 	if !ok {
 		c.String(http.StatusNotAcceptable, "Device not found")
+		return
+	}
+	if ! client.Online {
+		c.String(http.StatusNotAcceptable, "Device registered but not online")
 		return
 	}
 	ui, _ := uuid.NewV4()
@@ -117,4 +142,17 @@ func SendCommandBase(c *gin.Context) {
 	fmt.Println(string(result))
 	delete(client.Missions, uis)
 	c.Data(http.StatusOK, "application/json", result)
+}
+
+func GetNodeInfo(c *gin.Context) {
+	device_id, ok:= c.GetQuery("device_id")
+	if !ok {
+		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
+	}
+	client, ok := manager.Clients[device_id]
+	if !ok {
+		c.String(http.StatusNotAcceptable, "Device not found")
+		return
+	}
+	c.JSON(http.StatusOK, client)
 }

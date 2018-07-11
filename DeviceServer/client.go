@@ -4,23 +4,30 @@ import (
 	"log"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-)
+	"github.com/bary321/DeviceControl/Structs"
+	"time"
+	)
 
 type Client struct {
 	Id     string
-	Socket *websocket.Conn
-	Send   chan []byte
-	Missions   map[string]chan []byte
+	Socket *websocket.Conn `json:"-"`
+	Online bool
+	SysInfo *Structs.SysInfo
+	RegisterTime time.Time
+	UpdateTime time.Time
+	DropTime time.Time
+	Send   chan []byte `json:"-"`
+	Missions   map[string]chan []byte `json:"-"`
 }
 
 func (c *Client) read() {
 	defer func() {
 		manager.Unregister <- c
-		c.Socket.Close()
+		// c.Socket.Close()
 	}()
 
 	for {
-		var rm = new(ResponseMessage)
+		var rm = new(Structs.ResponseMessage)
 		_, message, err := c.Socket.ReadMessage()
 		if err != nil {
 			manager.Unregister <- c

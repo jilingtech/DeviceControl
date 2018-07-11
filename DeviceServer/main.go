@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"flag"
 	"github.com/gin-gonic/gin"
-	"net/http"
-)
+	)
 
 var (
 	port = flag.Int("port", 1234, "")
@@ -21,11 +20,10 @@ var manager = ClientManager{
 func main() {
 	flag.Parse()
 	r := gin.Default()
-	r.GET("/ws", func(c *gin.Context) {
-		Sockets(c.Writer, c.Request)
-	})
+	r.GET("/ws", Sockets)
 	r.POST("/api/cmds/send", SendCommandBase)
-	r.StaticFS("/tmp", http.Dir("/tmp"))
+	r.GET("/api/node/info", GetNodeInfo)
+
 	go manager.start()
 
 	r.Run(fmt.Sprintf(":%d", *port))

@@ -4,37 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"time"
-
 	"github.com/gorilla/websocket"
 	"encoding/json"
+	"github.com/bary321/DeviceControl/Structs"
+	"github.com/ipfs/go-ipfs-api"
+	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
 	)
 
-type RegisterMessage struct {
-	Id string `json:"id"`
-}
-
-type ResponseMessage struct {
-	Id string
-	Detail []byte
-}
-
-type CommandMessage struct {
-	Id string
-
-	Detail []byte
-}
-
-type Client struct {
-	BoxId string
-	Socket *websocket.Conn
-	Send   chan []byte
-}
-
 var (
-	host = flag.String("host", "192.168.2.90", "http service host")
-	port = flag.Int("port", 1234, "http service port")
-	id = flag.String("id", "test", "id")
+	host  = flag.String("host", "localhost", "http service host")
+	port  = flag.Int("port", 1234, "http service port")
+	// id    = flag.String("id", "test", "id")
+	delay = flag.Int("delay", 30, "delay")
+	gateway = flag.String("gateway", "192.168.2.92:5001", "")
+	log = logging.Logger("main")
 )
 
 func main() {
@@ -44,62 +27,49 @@ func main() {
 	var c = new(Client)
 	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
-	c.BoxId = *id
+	defer conn.Close()
+	var sh = shell.NewShell(*gateway)
+	ido, err := sh.ID()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	c.BoxId = ido.ID
 	c.Socket = conn
 	c.Send = make(chan []byte)
 
 	go c.write()
 
-	rm, err := json.Marshal(RegisterMessage{Id:c.BoxId})
+	rm, err := json.Marshal(Structs.RegisterMessage{Id:c.BoxId})
 	c.Send <- rm
 	// go timeWriter(conn)
 
 	for {
-		var rm = new(ResponseMessage)
+		var rm = new(Structs.ResponseMessage)
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("read:", err)
+			log.Error("read:", err)
 			return
 		}
 
 		fmt.Printf("received: %s\n", message)
-		var cm = new(CommandMessage)
+		var cm = new(Structs.RequestMessage)
 		err = json.Unmarshal(message, cm)
 		if err != nil {
-			fmt.Println("covert err", err)
+			log.Error("covert err", err)
 			continue
+		}
+		if cm.Type == 3 {
+			log.Error(cm.Id)
+			c.Socket.Close()
+			return
 		}
 		rm.Id = string(cm.Id)
 		rm.Detail = cm.Detail
 		rmj, err := json.Marshal(rm)
 		c.Send <- rmj
-	}
-}
-
-func (c *Client) write() {
-	defer func() {
-		c.Socket.Close()
-	}()
-
-	for {
-		select {
-		case message, ok := <-c.Send:
-			if !ok {
-				c.Socket.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-			c.Socket.WriteMessage(websocket.TextMessage, message)
-		}
-	}
-}
-
-
-func timeWriter(conn *websocket.Conn) {
-	for {
-		time.Sleep(time.Second * 2)
-		conn.WriteMessage(websocket.TextMessage, []byte(time.Now().Format("2006-01-02 15:04:05")))
 	}
 }
