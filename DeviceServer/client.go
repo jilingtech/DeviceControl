@@ -1,23 +1,24 @@
 package main
 
 import (
-	"log"
 	"encoding/json"
-	"github.com/gorilla/websocket"
-	"github.com/bary321/DeviceControl/Structs"
+	"log"
 	"time"
-	)
+
+	"github.com/bary321/DeviceControl/common"
+	"github.com/gorilla/websocket"
+)
 
 type Client struct {
-	Id     string
-	Socket *websocket.Conn `json:"-"`
-	Online bool
-	SysInfo *Structs.SysInfo
+	Id           string
+	Socket       *websocket.Conn `json:"-"`
+	Online       bool
+	SysInfo      *common.SysInfo
 	RegisterTime time.Time
-	UpdateTime time.Time
-	DropTime time.Time
-	Send   chan []byte `json:"-"`
-	Missions   map[string]chan []byte `json:"-"`
+	UpdateTime   time.Time
+	DropTime     time.Time
+	Send         chan []byte            `json:"-"`
+	Missions     map[string]chan []byte `json:"-"`
 }
 
 func (c *Client) read() {
@@ -27,7 +28,7 @@ func (c *Client) read() {
 	}()
 
 	for {
-		var rm = new(Structs.ResponseMessage)
+		var rm = new(common.Message)
 		_, message, err := c.Socket.ReadMessage()
 		if err != nil {
 			manager.Unregister <- c
@@ -40,12 +41,21 @@ func (c *Client) read() {
 			log.Println("Unformatted data")
 			continue
 		}
-		r, ok := c.Missions[rm.Id]
-		if !ok {
-			log.Println("Unknown message id")
-			continue
+		if rm.Type == common.CommandResponseType {
+			r, ok := c.Missions[rm.Id]
+			if !ok {
+				log.Println("Unknown message id")
+				continue
+			}
+			r <- rm.Detail
+		} else if rm.Type == common.StatusType {
+			err = json.Unmarshal(rm.Detail, c.SysInfo)
+			if err != nil {
+				log.Println("can't unmarshal data", string(rm.Detail))
+				continue
+			}
+			c.UpdateTime = time.Now()
 		}
-		r <- rm.Detail
 	}
 }
 

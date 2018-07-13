@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-				)
+	"encoding/json"
+)
 
 type Client struct {
 	BoxId string
 	Socket *websocket.Conn
 	Send   chan []byte
+	Registered bool
 }
 
 func (c *Client) write() {
@@ -25,4 +27,14 @@ func (c *Client) write() {
 			c.Socket.WriteMessage(websocket.TextMessage, message)
 		}
 	}
+}
+
+
+func (c *Client) WriteJson(obj interface{}) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	c.Send <- data
+	return nil
 }

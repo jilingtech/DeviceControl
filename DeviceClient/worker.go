@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"io/ioutil"
+	"encoding/json"
+	"github.com/bary321/DeviceControl/common"
 )
 
 type Worker interface {
@@ -11,24 +10,21 @@ type Worker interface {
 }
 
 type CameraWorker struct {
-
 }
 
 type SysInfoWorker struct {
-
 }
 
 func (s *SysInfoWorker) Work(c *Client) error {
-	resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/diag/sys", *gateway))
+	body, err := common.GetSysInfo(*gateway)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
+	rm, err := common.NewMessageByDetail(common.StatusType, body)
+	data, err := json.Marshal(rm)
 	if err != nil {
 		return err
 	}
-	c.Send <- body
+	c.Send <- data
 	return nil
 }

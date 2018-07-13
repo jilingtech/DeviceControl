@@ -1,4 +1,4 @@
-package Structs
+package common
 
 type DiskInfo struct {
 	FreeSpace int `json:"free_space,omitempty"`
