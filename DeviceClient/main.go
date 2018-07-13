@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
+	logs "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
 	"net/url"
 	"github.com/bary321/DeviceControl/common"
 	"github.com/gorilla/websocket"
+	"strings"
 )
 
 var (
@@ -16,15 +18,36 @@ var (
 	// id    = flag.String("id", "test", "id")
 	delay   = flag.Int("delay", 3, "delay")
 	gateway = flag.String("gateway", "192.168.2.92:5001", "")
+	loglevel = flag.String("loglevel", "DEBUG", "")
 	log     = logging.Logger("main")
 )
 
 func main() {
+	var lvl logs.Level
 	var dialer *websocket.Dialer
 	var c = new(Client)
 	var dr = new(common.DetailRegister)
 
 	flag.Parse()
+
+	switch strings.ToUpper(*loglevel) {
+	case "CRITICAL":
+		lvl = logs.CRITICAL
+	case "ERROR":
+		lvl = logs.ERROR
+	case "WARNING":
+		lvl = logs.WARNING
+	case "NOTICE":
+		lvl = logs.NOTICE
+	case "INFO":
+		lvl = logs.INFO
+	case "DEBUG":
+		lvl = logs.DEBUG
+	default:
+		lvl = logs.WARNING
+	}
+
+	logging.SetAllLoggers(lvl)
 
 	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", *host, *port), Path: "/ws"}
 	conn, _, err := dialer.Dial(u.String(), nil)
@@ -40,6 +63,9 @@ func main() {
 		return
 	}
 	c.BoxId = ido.ID
+
+	log.Info("This box id is", c.BoxId)
+
 	c.Socket = conn
 	c.Send = make(chan []byte)
 	c.Registered = false
