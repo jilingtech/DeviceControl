@@ -14,12 +14,18 @@ type CameraWorker struct {
 }
 
 type SysInfoWorker struct {
+	Cache []byte
 }
 
 func (s *SysInfoWorker) Work(c *Client) error {
 	body, err := api.GetSysInfo(*gateway)
 	if err != nil {
 		return err
+	}
+	if string(body) == string(s.Cache) {
+		return nil
+	} else {
+		s.Cache = body
 	}
 	rm, err := common.NewMessageByDetail(common.StatusType, body)
 	data, err := json.Marshal(rm)
