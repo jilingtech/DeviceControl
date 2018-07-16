@@ -10,6 +10,7 @@ import (
 	"github.com/bary321/DeviceControl/common"
 	"github.com/gorilla/websocket"
 	"strings"
+	api "github.com/bary321/go-zfs-api"
 )
 
 var (
@@ -57,7 +58,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	ido, err := common.GetID(*gateway)
+	ido, err := api.GetID(*gateway)
 	if err != nil {
 		log.Error(err)
 		return
@@ -72,7 +73,7 @@ func main() {
 
 	go c.write()
 
-	sysinfo, err := common.GetSysInfo(*gateway)
+	sysinfo, err := api.GetSysInfo(*gateway)
 	dr.BoxId = c.BoxId
 	dr.SI = sysinfo
 	rm, err := common.NewMessageByObj(common.RegisterType, dr)

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/bary321/DeviceControl/common"
+	api "github.com/bary321/go-zfs-api"
 )
 
 type Worker interface {
@@ -16,7 +17,7 @@ type SysInfoWorker struct {
 }
 
 func (s *SysInfoWorker) Work(c *Client) error {
-	body, err := common.GetSysInfo(*gateway)
+	body, err := api.GetSysInfo(*gateway)
 	if err != nil {
 		return err
 	}
