@@ -1,10 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"flag"
 	"github.com/gin-gonic/gin"
-	)
+	"net/http"
+	"log"
+	"os"
+	"os/signal"
+	"time"
+	"context"
+	"fmt"
+)
 
 var (
 	port = flag.Int("port", 1234, "")
@@ -26,5 +32,32 @@ func main() {
 
 	go manager.start()
 
-	r.Run(fmt.Sprintf(":%d", *port))
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", *port),
+		Handler: r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		// service connections
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	log.Println("Server exiting")
+
 }
