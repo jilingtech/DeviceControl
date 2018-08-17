@@ -1,24 +1,22 @@
 package cameraid
 
 import (
-	"net/http"
-	"io/ioutil"
-	"fmt"
-	"github.com/bary321/DeviceControl/camera/format"
 	"bytes"
 	"encoding/xml"
+	"fmt"
+	"github.com/bary321/DeviceControl/camera/format"
+	"io/ioutil"
+	"net/http"
 )
 
 type CamInfo struct {
-	BoxId string
+	BoxId   string
 	RtspUrl string
 }
 
-
 func GetInfo() *CamInfo {
-	return &CamInfo{BoxId:"12345678901234567890", RtspUrl:"rtsp://192.168.2.90"}
+	return &CamInfo{BoxId: "12345678901234567890", RtspUrl: "rtsp://192.168.2.90"}
 }
-
 
 func AddToPlatForm(rtsp, user, password, id, url string) (*format.RecMessage, error) {
 	var m = new(format.RecMessage)

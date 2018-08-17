@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
-	"context"
-	"fmt"
 )
 
 var (
@@ -33,8 +33,8 @@ func main() {
 	go manager.start()
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", *port),
-		Handler: r,
+		Addr:         fmt.Sprintf(":%d", *port),
+		Handler:      r,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

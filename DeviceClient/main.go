@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
-	logs "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
-	"net/url"
 	"github.com/bary321/DeviceControl/common"
-	"github.com/gorilla/websocket"
-	"strings"
 	api "github.com/bary321/go-zfs-api"
+	"github.com/gorilla/websocket"
+	logs "gx/ipfs/QmQvJiADDe7JR4m968MwXobTCCzUqQkP87aRHe29MEBGHV/go-logging"
+	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
+	"net/url"
+	"strings"
 )
 
 var (
 	host = flag.String("host", "localhost", "http service host")
 	port = flag.Int("port", 1234, "http service port")
 	// id    = flag.String("id", "test", "id")
-	delay   = flag.Int("delay", 3, "delay")
-	gateway = flag.String("gateway", "192.168.2.92:5001", "")
+	delay    = flag.Int("delay", 3, "delay")
+	gateway  = flag.String("gateway", "192.168.2.92:5001", "")
 	loglevel = flag.String("loglevel", "DEBUG", "")
-	log     = logging.Logger("main")
+	log      = logging.Logger("main")
 )
 
 func main() {
@@ -87,7 +87,7 @@ func main() {
 	go ReportSysInfo(c)
 
 	for {
-		var rec ,res = new(common.Message), new(common.Message)
+		var rec, res = new(common.Message), new(common.Message)
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Error("read:", err)
@@ -103,7 +103,7 @@ func main() {
 		if rec.Type == common.RegisterOkType {
 			log.Info("Register OK")
 			c.Registered = true
-		} else 	if rec.Type == common.ErrorType {
+		} else if rec.Type == common.ErrorType {
 			var de = new(common.DetailError)
 			json.Unmarshal(rec.Detail, de)
 			log.Error(de.Code, de.ErrorDetail)

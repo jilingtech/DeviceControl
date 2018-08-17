@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/bary321/DeviceControl/common"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"errors"
+	"io"
+	"net/http"
 	"strconv"
-		"io"
-	"github.com/bary321/DeviceControl/common"
 	"time"
-	)
+)
 
 func Sockets(c *gin.Context) {
 	var rm = new(common.Message)
@@ -70,7 +70,7 @@ func Sockets(c *gin.Context) {
 		}
 	} else {
 		client := &Client{Id: rd.BoxId, Socket: conn, Send: make(chan []byte), Missions: map[string]chan []byte{},
-						Online:true, RegisterTime:time.Now(), UpdateTime:time.Now(), SysInfo:new(common.SysInfo)}
+			Online: true, RegisterTime: time.Now(), UpdateTime: time.Now(), SysInfo: new(common.SysInfo)}
 		manager.Register <- client
 
 		ro, _ := common.NewMessageByDetail(common.RegisterOkType, []byte{})
@@ -85,7 +85,7 @@ func SendCommand(c *gin.Context) {
 	var qos bool
 	var timeout int
 	var data []byte
-	device_id, ok:= c.GetQuery("device_id")
+	device_id, ok := c.GetQuery("device_id")
 	if !ok {
 		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
 	}
@@ -124,7 +124,7 @@ func SendCommand(c *gin.Context) {
 
 func SendCommandBase(c *gin.Context) {
 	buf := make([]byte, 1024)
-	device_id, ok:= c.GetQuery("device_id")
+	device_id, ok := c.GetQuery("device_id")
 	if !ok {
 		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
 	}
@@ -141,7 +141,7 @@ func SendCommandBase(c *gin.Context) {
 		c.String(http.StatusNotAcceptable, "Device not found")
 		return
 	}
-	if ! client.Online {
+	if !client.Online {
 		c.String(http.StatusNotAcceptable, "Device registered but not online")
 		return
 	}
@@ -155,14 +155,14 @@ func SendCommandBase(c *gin.Context) {
 	client.Missions[cm.Id] = make(chan []byte)
 	client.Send <- data
 
-	result := <- client.Missions[cm.Id]
+	result := <-client.Missions[cm.Id]
 	fmt.Println(string(result))
 	delete(client.Missions, cm.Id)
 	c.Data(http.StatusOK, "application/json", result)
 }
 
 func GetNodeInfo(c *gin.Context) {
-	device_id, ok:= c.GetQuery("device_id")
+	device_id, ok := c.GetQuery("device_id")
 	if !ok {
 		c.AbortWithError(http.StatusBadRequest, errors.New("device_id not found"))
 	}

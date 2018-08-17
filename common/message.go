@@ -1,13 +1,13 @@
 package common
 
-import(
-	"github.com/satori/go.uuid"
+import (
 	"github.com/gin-gonic/gin/json"
+	"github.com/satori/go.uuid"
 )
 
 type Message struct {
-	Id string `json:"message_id,omitempty"`
-	Type MessageType
+	Id     string `json:"message_id,omitempty"`
+	Type   MessageType
 	Detail []byte
 }
 
@@ -17,12 +17,12 @@ type GetInfo struct {
 
 type DetailRegister struct {
 	BoxId string `json:"boxid,omitempty"`
-	SI []byte `json:"sysinfo,omitempty"`
+	SI    []byte `json:"sysinfo,omitempty"`
 }
 
 type DetailError struct {
-	Code ErrorCode `json:"errcode,omitempty"`
-	ErrorDetail string `json:"errdetail,omitempty"`
+	Code        ErrorCode `json:"errcode,omitempty"`
+	ErrorDetail string    `json:"errdetail,omitempty"`
 }
 
 func NewMessageByDetail(t MessageType, datail []byte) (*Message, error) {
