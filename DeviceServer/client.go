@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -26,13 +27,16 @@ func (c *Client) read() {
 		manager.Unregister <- c
 		// c.Socket.Close()
 	}()
-
+	log.Println("log in read")
+	fmt.Println("fmt in read")
 	for {
 		var rm = new(common.Message)
 		_, message, err := c.Socket.ReadMessage()
 		if err != nil {
 			manager.Unregister <- c
 			c.Socket.Close()
+			log.Println("log in read err", err)
+			fmt.Println("fmt in read err", err)
 			break
 		}
 		log.Printf("recv: %s", message)

@@ -18,7 +18,7 @@ var (
 	port = flag.Int("port", 1234, "http service port")
 	// id    = flag.String("id", "test", "id")
 	delay    = flag.Int("delay", 3, "delay")
-	gateway  = flag.String("gateway", "192.168.2.92:5001", "")
+	gateway  = flag.String("gateway", "222.188.110.100:5001", "")
 	loglevel = flag.String("loglevel", "DEBUG", "")
 	log      = logging.Logger("main")
 )
